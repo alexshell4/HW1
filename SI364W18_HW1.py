@@ -5,13 +5,17 @@
 #################################
 
 ## List below here, in a comment/comments, the people you worked with on this assignment AND any resources you used to find code (50 point deduction for not doing so). If none, write "None".
-
+# Salvatore DiGioia
 
 
 ## [PROBLEM 1] - 150 points
 ## Below is code for one of the simplest possible Flask applications. Edit the code so that once you run this application locally and go to the URL 'http://localhost:5000/class', you see a page that says "Welcome to SI 364!"
 
-from flask import Flask
+import requests
+import json
+import facebook_info
+from flask import Flask, request
+####################################################################################
 app = Flask(__name__)
 app.debug = True
 
@@ -19,9 +23,88 @@ app.debug = True
 def hello_to_you():
     return 'Hello!'
 
+## [PROBLEM 1] ##
+@app.route('/class')
+def our_class():
+    return 'Welcome to SI 364!'
 
+## [PROBLEM 2] ##
+@app.route('/movie/<movietitle>')
+def itunes_movie_data(movietitle):
+    baseURL = 'https://itunes.apple.com/search'
+    params = {'term':str(movietitle), 'entity':'movie'}
+    response_obj = requests.get(baseURL, params = params)
+    response_dict = json.loads(response_obj.text)
+    return str(response_dict)
+
+## [PROBLEM 3] ##
+@app.route('/question')
+def get_number():
+    number_form = """<!DOCTYPE html>
+<html>
+<body>
+<h1>Please Enter Your Favorite Number In The Box</h1>
+<form action = "/answer" method = "POST">
+  Favorite Number:<br>
+  <input type="number" name="number">
+  <br>
+  <input type="submit" value="Submit">
+</form>
+</body>
+</html>"""
+    return number_form
+
+@app.route('/answer', methods=['POST'])
+def double_number():
+  if request.method == 'POST':
+    number = request.form['number']
+    doubled_number = str(int(number) * 2)
+    return '<h1>Double Your Favorite Number Is {}</h1>'.format(doubled_number)
+
+## [PROBLEM 4] ##
+@app.route('/problem4form', methods=["GET","POST"])
+def info_entry():
+  info_form = """<!DOCTYPE html>
+<html>
+<body>
+<h1>Get Search For Users On Facebook</h1>
+<form action = "/problem4form" method = "POST">
+  Input Search Term:<br>
+  Search Term: <input type="text" name="search">
+  <br>
+  Number of Results(select one):<br>
+  <input type="checkbox" name="ten" value="10"> 10 Results
+  <br>
+  <input type="checkbox" name="fifty" value="50"> 50 Results
+  <br>
+  <input type="checkbox" name="hundred" value="100"> 100 Results
+  <br>
+  <input type="submit" value="Submit">
+</form>
+</body>
+</html>"""
+  if request.method == 'POST':
+    if 'ten' in request.form:
+      qlimit = request.form['ten']
+    if 'fifty' in request.form:
+      qlimit = request.form['fifty']
+    if 'hundred' in request.form:
+      qlimit = request.form['hundred']
+    qterm = request.form['search']
+    fb_access_token = facebook_info.access_token
+    fbURL = 'https://graph.facebook.com/v2.11/search?'
+    params = {'q': qterm, 'type':'user', 'limit':qlimit, 'access_token':fb_access_token}
+    fb_responseobject = requests.get(fbURL, params=params)
+    fb_responsedict = json.loads(fb_responseobject.text)
+    name_list = list()
+    for item in fb_responsedict['data']:
+      name_list.append(item['name'])
+    return info_form + '<p>Names Matching Your Search: {}<p/>'.format(str(name_list))
+
+  return info_form
+########################################################################################
 if __name__ == '__main__':
-    app.run()
+    app.run(use_reloader=True, debug=True)
 
 
 ## [PROBLEM 2] - 250 points
